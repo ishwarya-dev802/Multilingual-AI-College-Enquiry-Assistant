@@ -1,0 +1,1 @@
+Multilingual AI-powered college enquiry assistant developed using Python, Django, HTML, CSS, and JavaScript. The system enables students to obtain college-specific information through natural language interactions, providing instant responses to admission, courses, fees, and campus-related queries using AI-based retrieval techniques.
