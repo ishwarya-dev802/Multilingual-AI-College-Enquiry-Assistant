@@ -1,0 +1,387 @@
+@startuml System Architecture - Vertical
+
+!theme plain
+skinparam componentStyle uml2
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 70
+
+package "Client Layer" {
+    component [Web Browser\n(HTML/CSS/JS)] as Browser
+}
+
+package "Django Web Server" {
+    component [Django Views\n(views.py)] as Views
+    component [URL Router\n(urls.py)] as Router
+    component [Session\nManagement] as Session
+    database [SQLite] as DB
+}
+
+package "Chatbot Application" {
+    component [Chat Handler] as ChatHandler
+    component [Intent\nClassifier] as IntentClassifier
+    component [Query\nRefiner] as QueryRefiner
+    component [Translation\nService] as Translator
+    component [Response\nGenerator] as ResponseGenerator
+}
+
+package "RAG System" {
+    component [Vector\nRetrieval] as VectorRetrieval
+    component [FAISS\nIndex] as FAISS
+    component [BM25\nSearch] as BM25
+    component [Hybrid\nRanker] as Ranker
+    database [Vector Store] as VectorStore
+}
+
+package "Data Collection" {
+    component [Web Crawler] as Crawler
+    component [PDF\nExtractor] as PDFExtractor
+    component [HTML\nCleaner] as HTMLCleaner
+}
+
+package "External Services" {
+    component [Bytez AI] as BytezAI
+    component [Google\nTranslator] as TranslatorAPI
+    component [LangDetect] as LangDetect
+    component [College\nWebsites] as CollegeWeb
+    component [Wikipedia] as Wiki
+    component [Aggregators] as Aggregators
+}
+
+Browser -down-> Router
+Router -down-> Views
+Views -down-> Session
+Session -down-> DB
+
+Views -down-> ChatHandler
+ChatHandler -down-> IntentClassifier
+ChatHandler -down-> QueryRefiner
+ChatHandler -down-> Translator
+ChatHandler -down-> ResponseGenerator
+
+QueryRefiner -down-> VectorRetrieval
+VectorRetrieval -down-> FAISS
+VectorRetrieval -down-> BM25
+VectorRetrieval -down-> Ranker
+FAISS -down-> VectorStore
+BM25 -down-> VectorStore
+
+ChatHandler -down-> Crawler
+Crawler -down-> CollegeWeb
+Crawler -down-> Wiki
+Crawler -down-> Aggregators
+Crawler -down-> PDFExtractor
+PDFExtractor -down-> CollegeWeb
+
+ResponseGenerator -down-> BytezAI
+Translator -down-> TranslatorAPI
+Translator -down-> LangDetect
+
+@enduml
+
+@startuml Data Flow - Vertical
+
+!theme plain
+skinparam activityBackgroundColor #f0f0f0
+skinparam arrowColor #333333
+skinparam linetype ortho
+skinparam nodesep 40
+
+start
+:User selects college;
+:Session stores college_id;
+
+:User enters question;
+
+:Question sent via API;
+
+:Translate to English;
+
+:Classify intent;
+
+if (Casual Chat?) then (yes)
+    :Generate chat reply;
+    :Translate to user language;
+    :Return response;
+else (no)
+    :Clean and refine query;
+    :Expand with synonyms;
+    :Retrieve from vector store;
+    :Fetch website data;
+    :Combine contexts;
+    :Generate AI response;
+    :Translate to user language;
+    :Return response;
+endif
+
+:Display in UI;
+
+stop
+
+@enduml
+
+@startuml Use Case - Vertical
+
+!theme plain
+skinparam actorStyle hsb
+skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 50
+
+actor "User" as User
+
+package "College Selection" {
+    usecase "Select College" as UC1
+    usecase "View Colleges" as UC2
+    usecase "Change College" as UC3
+}
+
+package "Chat Interaction" {
+    usecase "Ask Question" as UC4
+    usecase "Receive Answer" as UC5
+    usecase "Voice Input" as UC6
+}
+
+package "Language Support" {
+    usecase "Select Language" as UC7
+    usecase "Ask in Native\nLanguage" as UC8
+    usecase "Receive Translated\nResponse" as UC9
+}
+
+package "Information Retrieval" {
+    usecase "Course Info" as UC10
+    usecase "Fee Structure" as UC11
+    usecase "Placements" as UC12
+    usecase "Admissions" as UC13
+    usecase "Faculty Details" as UC14
+    usecase "Hostel Info" as UC15
+}
+
+package "System Features" {
+    usecase "Intent\nClassification" as UC16
+    usecase "Query\nRefinement" as UC17
+    usecase "Web Data\nFetch" as UC18
+    usecase "PDF\nExtraction" as UC19
+}
+
+User -down-> UC1
+User -down-> UC2
+User -down-> UC3
+User -down-> UC4
+User -down-> UC5
+User -down-> UC6
+User -down-> UC7
+User -down-> UC8
+User -down-> UC10
+User -down-> UC11
+User -down-> UC12
+User -down-> UC13
+User -down-> UC14
+User -down-> UC15
+UC9 .down.> UC5
+
+@enduml
+
+@startuml Class Diagram - Vertical
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 60
+
+package "colleges_data" {
+    class COLLEGES
+}
+
+package "chatbot.views" {
+    class Views {
+        + select_college(request)
+        + enter_chat(request)
+        + chat_page(request)
+        + chatbot(request)
+        + generate_response(prompt)
+        + translate_to_english(text)
+        + translate_back(text, lang)
+        + is_general_conversation(msg)
+        + refine_user_question(q)
+    }
+}
+
+package "chatbot.rag" class RAGSystem {
+    + ensure_index(college_id)
+    + retrieve_context(college_id, question)
+    - build_index_background(college_id)
+    - get_embed_model()
+    - smart_chunk(text)
+}
+
+package "chatbot.crawler" class WebCrawler {
+    + crawl_college_sources(info)
+    - async_crawl_all(info)
+    - crawl_official(page, url)
+    - extract_pdf_text(url)
+}
+
+class BytezAI
+class GoogleTranslator
+class LangDetect
+
+Views -down-> COLLEGES
+Views -down-> RAGSystem
+Views -down-> WebCrawler
+Views -down-> BytezAI
+Views -down-> GoogleTranslator
+Views -down-> LangDetect
+RAGSystem -down-> BytezAI
+
+@enduml
+
+@startuml Sequence Diagram - Vertical
+
+!theme plain
+skinparam backgroundColor #ffffff
+skinparam linetype ortho
+
+actor User
+participant Browser
+participant Views
+participant Intent
+participant QueryRef
+participant Vector
+participant Crawler
+participant AI
+participant Translate
+
+Browser->Views: POST /api/chat/
+Views->Translate: translate_to_english()
+Translate-->Views: english_question
+Views->Intent: is_general_conversation()
+
+alt Chat
+    Intent-->Views: true
+    Views->AI: openai_chat_reply()
+    AI-->Views: chat_reply
+    Views->Translate: translate_back()
+    Translate-->Views: response
+else Info Query
+    Intent-->Views: false
+    Views->QueryRef: refine_question()
+    QueryRef-->Views: optimized
+    Views->Vector: retrieve_context()
+    Vector-->Views: context
+    Views->Crawler: fetch_from_sources()
+    Crawler-->Views: website_data
+    Views->AI: generate_response()
+    AI-->Views: answer
+    Views->Translate: translate_back()
+    Translate-->Views: translated
+end
+
+Views-->Browser: JSON response
+Browser-->User: Display
+
+@enduml
+
+@startuml Activity - Chat Flow - Vertical
+
+!theme plain
+skinparam activityBackgroundColor #e8f5e9
+skinparam activityBorderColor #2e7d32
+skinparam linetype ortho
+skinparam nodesep 30
+
+start
+:Send message;
+
+if (Empty?) then (yes)
+    :Error;
+    stop
+endif
+
+if (No college?) then (yes)
+    :Error;
+    stop
+endif
+
+if (No index?) then (yes)
+    :Build KB;
+    :Wait message;
+    stop
+endif
+
+:Detect language;
+:Translate to English;
+
+:Classify intent;
+
+if (Intent = CHAT?) then (yes)
+    :Generate reply;
+    :Translate reply;
+    :Return;
+    stop
+endif
+
+:Expand synonyms;
+:Optimize query;
+
+:Retrieve vector;
+:Fetch web data;
+:Combine contexts;
+
+if (No context?) then (yes)
+    :Not available;
+    stop
+endif
+
+:Generate AI response;
+:Translate response;
+
+:Return response;
+
+stop
+
+@enduml
+
+@startuml Activity - Knowledge Base Building - Vertical
+
+!theme plain
+skinparam activityBackgroundColor #e3f2fd
+skinparam activityBorderColor #1565c0
+skinparam linetype ortho
+skinparam nodesep 30
+
+start
+
+:Start build;
+
+:Read college URLs;
+
+:Async crawl website;
+
+:Crawl important paths;
+note right: courses,\nadmissions,\nplacements
+
+:Extract PDFs;
+
+:Crawl Wikipedia;
+
+:Crawl aggregators;
+
+:Clean HTML;
+
+:Smart chunk;
+
+:Load embedding;
+
+:Generate embeddings;
+
+:Create FAISS index;
+
+:Save index + chunks;
+
+:KB ready;
+
+stop
+
+@enduml

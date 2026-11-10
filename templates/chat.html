@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Voice Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #c7d2fe 100%);
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+        .chat-container {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .message-user {
+            background: linear-gradient(to right, #4f46e5, #6366f1);
+            color: white;
+            border-bottom-right-radius: 6px !important;
+        }
+        .message-bot {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 6px !important;
+        }
+        .mic-active {
+            background: #ef4444 !important;
+            color: white !important;
+            animation: pulse 1.2s infinite ease-in-out;
+            transform-origin: center;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.18); }
+        }
+        .chat-message {
+            animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .floating-orbs {
+            background: radial-gradient(circle at 15% 25%, rgba(99,102,241,0.08) 0%, transparent 20%),
+                        radial-gradient(circle at 85% 75%, rgba(79,70,229,0.07) 0%, transparent 25%);
+            pointer-events: none;
+            animation: float 25s infinite linear;
+        }
+        @keyframes float {
+            0%   { transform: translate(0, 0); }
+            50%  { transform: translate(40px, -30px); }
+            100% { transform: translate(0, 0); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Floating orbs background -->
+    <div class="floating-orbs absolute inset-0 z-0"></div>
+
+    <!-- Glass Navbar -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+                <span class="text-xl font-bold text-gray-900 tracking-tight">Campus Bot</span>
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="/" class="text-gray-700 hover:text-indigo-600 font-medium transition-colors">Home</a>
+            </div>
+
+            <button class="md:hidden text-gray-800 focus:outline-none">
+                <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Chat Card -->
+    <div class="max-w-3xl mx-auto pt-24 pb-8 px-4 sm:px-6">
+
+        <div class="chat-container rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] sm:h-[88vh]">
+
+            <!-- Header -->
+            <div class="glass px-6 py-4 border-b border-white/30 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">{{ college_name }}</h2>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+                        <p class="text-sm text-green-700 font-medium">Online</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div id="chatbox" class="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 bg-gradient-to-b from-white/40 to-transparent">
+                <!-- Welcome -->
+                <div class="chat-message flex justify-start">
+                    <div class="message-bot px-5 py-4 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm">
+                        <p class="text-gray-800 leading-relaxed">
+                            👋 Hello! I'm your smart campus assistant for <strong>{{ college_name }}</strong>.
+                            <br><br>
+                            🎤 Just speak or type — I support <strong>English, Telugu, Hindi, Kannada</strong> automatically.
+                            <br>
+                            Ask anything: courses, admissions, placements, campus life...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="spinner" class="hidden py-4 text-center text-gray-500 bg-white/30 border-t border-white/20">
+                <div class="inline-flex items-center gap-2.5">
+                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-indigo-500 border-t-transparent"></div>
+                    <span class="font-medium">Thinking...</span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="glass border-t border-white/30 p-5 sm:p-6">
+                <div class="flex items-center gap-3">
+                    <input 
+                        id="message"
+                        type="text"
+                        placeholder="Type your question or tap 🎤 to speak..."
+                        class="flex-1 px-5 py-3.5 bg-white/70 border border-gray-200/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 transition-all shadow-sm placeholder-gray-500 text-gray-900"
+                        onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(false); }"
+                    />
+
+                    <button 
+                        id="micBtn"
+                        onclick="toggleListening()"
+                        class="bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 px-5 py-3.5 rounded-2xl transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400/40 active:scale-95 min-w-[52px] flex items-center justify-center shadow-sm"
+                        title="Tap to speak (English / Telugu / Hindi / Kannada)"
+                    >
+                        🎤
+                    </button>
+
+                    <button 
+                        onclick="sendMessage(false)"
+                        class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3.5 rounded-2xl hover:from-indigo-700 hover:to-blue-700 transition-all shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+                    >
+                        Send
+                    </button>
+                </div>
+                <p class="text-xs text-center text-gray-500 mt-3 opacity-80">
+                    Voice works best in Chrome • Auto language detection
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+ <script>
+
+/* ================= VARIABLES ================= */
+
+const chatbox = document.getElementById("chatbox");
+const messageEl = document.getElementById("message");
+const micBtn = document.getElementById("micBtn");
+const spinner = document.getElementById("spinner");
+
+let recognition;
+let isListening = false;
+
+let conversationLanguage = "en-IN";
+let languageLocked = false;
+
+/* ================= LANGUAGE DETECTION ================= */
+
+function detectLanguage(text){
+    const lowerText = text.toLowerCase();
+    
+    // Check for actual Telugu script
+    if(/[\u0C00-\u0C7F]/.test(text)) return "te-IN";
+    // Check for Hindi script
+    if(/[\u0900-\u097F]/.test(text)) return "hi-IN";
+    // Check for Kannada script
+    if(/[\u0C80-\u0CFF]/.test(text)) return "kn-IN";
+    
+    // Check for explicit language requests in English/Roman script
+    if(lowerText.includes('hindi') || lowerText.includes('हिंदी')) return "hi-IN";
+    if(lowerText.includes('english') || lowerText.includes('english')) return "en-IN";
+    if(lowerText.includes('kannada') || lowerText.includes('ಕನ್ನಡ')) return "kn-IN";
+    
+    // Check for Telugu-specific words
+    const teluguWords = ['telugu', 'tamil', 'naaku', 'mee', 'emi', 'cheppandi', 
+                         'matladu', 'matladali', 'ra', 'le', 'ka', 'da', 'di', 'ku', 'ni', 'vi',
+                         'namaste', 'vanakkam', 'swaagatam', 'dhanyavaadham', 'shukriya',
+                         'sahayam', 'kaavalani', 'cheyy', 'ippude', 'ela', 'undhi'];
+    
+    for(const word of teluguWords){
+        if(lowerText.includes(word)){
+            return "te-IN";
+        }
+    }
+    
+    return "en-IN";
+}
+
+/* ================= INIT SPEECH ================= */
+
+function initSpeech(){
+
+    if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){
+        alert("Use Google Chrome for voice.");
+        return;
+    }
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRec();
+
+    recognition.continuous = false;   // listen one sentence at a time
+    recognition.interimResults = false;
+    recognition.lang = "en-IN";
+
+    recognition.onstart = () => {
+        isListening = true;
+        micBtn.classList.add("mic-active");
+    };
+
+    recognition.onresult = async (event) => {
+
+        const transcript = event.results[0][0].transcript.trim();
+        if(!transcript) return;
+
+        // Detect language only first time
+        if(!languageLocked){
+            conversationLanguage = detectLanguage(transcript);
+            recognition.lang = conversationLanguage;
+            languageLocked = true;
+        }
+
+        messageEl.value = transcript;
+        stopListening();
+        await sendMessage(true);   // auto send with voice flag
+    };
+
+    recognition.onend = () => {
+        micBtn.classList.remove("mic-active");
+        isListening = false;
+    };
+
+    recognition.onerror = (event) => {
+        console.error("Speech error:", event.error);
+        alert("Voice error: " + event.error + ". Please allow microphone access.");
+        stopListening();
+    };
+}
+
+initSpeech();
+
+/* ================= MIC BUTTON ================= */
+
+function toggleListening(){
+
+    if(!recognition){
+        // Try to initialize again
+        initSpeech();
+        if(!recognition){
+            alert("Voice recognition not supported. Use Google Chrome.");
+            return;
+        }
+    }
+
+    if(isListening){
+        recognition.stop();
+        return;
+    }
+
+    try{
+        recognition.lang = conversationLanguage;
+        recognition.start();
+    }catch(e){
+        console.error("Mic error:", e);
+        alert("Please allow microphone access in browser settings.");
+    }
+}
+
+/* ================= SEND MESSAGE ================= */
+
+async function sendMessage(voiceInput = false){
+
+    const msg = messageEl.value.trim();
+    if(!msg) return;
+
+    chatbox.innerHTML += `
+    <div class="flex justify-end">
+        <div class="message-user px-5 py-4 rounded-2xl max-w-[80%] shadow-md">
+        ${msg}
+        </div>
+    </div>`;
+
+    chatbox.scrollTop = chatbox.scrollHeight;
+    messageEl.value = "";
+    spinner.classList.remove("hidden");
+
+    try{
+
+        const res = await fetch("/api/chat/",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+                "X-CSRFToken":"{{ csrf_token }}"
+            },
+            body:JSON.stringify({
+                message:msg,
+                language:conversationLanguage,
+                voice:voiceInput
+            })
+        });
+
+        const data = await res.json();
+
+        chatbox.innerHTML += `
+        <div class="flex justify-start">
+            <div class="message-bot px-5 py-4 rounded-2xl max-w-[80%] shadow-sm">
+            ${data.response}
+            </div>
+        </div>`;
+
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        // Speak if this is a voice input OR if the language is non-English
+        // This ensures speech works for Indian languages
+        const shouldSpeak = voiceInput === true || (conversationLanguage !== "en-IN" && conversationLanguage !== "en");
+        console.log("Voice input:", voiceInput, "Language:", conversationLanguage, "Should speak:", shouldSpeak);
+        
+        if(shouldSpeak){
+            console.log("Calling speakResponse...");
+            speakResponse(data.response);
+        }
+
+    }catch(err){
+        console.error(err);
+    }finally{
+        spinner.classList.add("hidden");
+    }
+}
+
+/* ================= TEXT TO SPEECH ================= */
+
+function getVoiceForLanguage(langCode){
+    // Convert language code
+    let searchLang = 'te'; // Default to Telugu
+    if(langCode === 'hi-IN' || langCode === 'hi') searchLang = 'hi';
+    if(langCode === 'kn-IN' || langCode === 'kn') searchLang = 'kn';
+    if(langCode === 'en-IN' || langCode === 'en') searchLang = 'en';
+    
+    // Try to find a voice for the language
+    const voices = window.speechSynthesis.getVoices();
+    
+    // First, try exact match
+    let voice = voices.find(v => v.lang.toLowerCase().startsWith(searchLang));
+    
+    // If not found, try any Indian voice
+    if(!voice){
+        voice = voices.find(v => v.lang.toLowerCase().includes('in'));
+    }
+    
+    // If still not found, use default
+    return voice;
+}
+
+function speakResponse(text){
+
+    if(!('speechSynthesis' in window)) {
+        alert("Text-to-speech not supported in this browser.");
+        return;
+    }
+
+    // Strip HTML tags for speech
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = text;
+    const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+    if(!plainText.trim()) {
+        console.log("No text to speak");
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utter = new SpeechSynthesisUtterance(plainText);
+    
+    // Try to get a proper Telugu/Indian voice
+    const voice = getVoiceForLanguage(conversationLanguage);
+    if(voice){
+        utter.voice = voice;
+    }
+    
+    utter.lang = conversationLanguage;
+    utter.rate = 0.8; // Slightly slower for clarity
+    utter.pitch = 1;
+    utter.volume = 1;
+
+    utter.onstart = () => {
+        console.log("Speech started");
+    };
+    
+    utter.onend = () => {
+        console.log("Speech ended, auto-restarting mic...");
+        // AUTO CONTINUE LISTENING AFTER BOT SPEAKS
+        try{
+            if(recognition && conversationLanguage){
+                recognition.lang = conversationLanguage;
+                recognition.start();
+            }
+        }catch(e){
+            console.log("Auto-restart skipped:", e);
+        }
+    };
+    
+    utter.onerror = (e) => {
+        console.error("Speech error:", e);
+    };
+
+    window.speechSynthesis.speak(utter);
+}
+
+</script>
+
+</body>
+</html>
